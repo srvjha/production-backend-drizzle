@@ -7,4 +7,10 @@ export const signupPayloadModel = z.object({
   password: z.string().min(8, "Password must be at least 8 characters long"),
 });
 
+export const signinPayloadModel = z.object({
+  email: z.email("Invalid email address"),
+  password: z.string().min(8, "Password must be at least 8 characters long"),
+});
+
 export type SignupPayloadModel = z.infer<typeof signupPayloadModel>;
+export type SigninPayloadModel = z.infer<typeof signinPayloadModel>;
