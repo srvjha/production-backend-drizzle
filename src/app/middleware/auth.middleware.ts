@@ -1,6 +1,7 @@
 import type { NextFunction, Request, Response } from "express";
 import { verifyUserToken } from "../auth/utils/token";
 import ApiError from "../../utils/api-error";
+import BaseDto from "../../dto/base.dto";
 
 export function authMiddleware() {
   return function (req: Request, res: Response, next: NextFunction) {
@@ -33,5 +34,16 @@ export function restrictToAuthenticatedUser() {
       );
     }
     return next();
+  };
+}
+
+export function validate(DtoClass: typeof BaseDto) {
+  return async function (req: Request, res: Response, next: NextFunction) {
+    try {
+      req.body = await DtoClass.validate(req.body);
+      next();
+    } catch (error) {
+      next(error);
+    }
   };
 }

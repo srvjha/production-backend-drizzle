@@ -1,5 +1,5 @@
 import type { Request, Response } from "express";
-import { signinPayloadModel, signupPayloadModel } from "./models";
+
 import { db } from "../../db";
 import { usersTable } from "../../db/schema";
 import { eq } from "drizzle-orm";
@@ -10,14 +10,7 @@ import ApiResponse from "../../utils/api-response";
 
 class AuthenticationController {
   public async handleSignUp(req: Request, res: Response) {
-    const validationResult = await signupPayloadModel.safeParseAsync(req.body);
-    if (validationResult.error) {
-      return res.status(400).json({
-        message: "Invalid request body",
-        error: validationResult.error.issues,
-      });
-    }
-    const { firstName, lastName, email, password } = validationResult.data;
+    const { firstName, lastName, email, password } = req.body;
     const existingUser = await db
       .select()
       .from(usersTable)
@@ -45,14 +38,7 @@ class AuthenticationController {
     });
   }
   public async handleSignIn(req: Request, res: Response) {
-    const validationResult = await signinPayloadModel.safeParseAsync(req.body);
-    if (validationResult.error) {
-      return res.status(400).json({
-        message: "Invalid request body",
-        error: validationResult.error.issues,
-      });
-    }
-    const { email, password } = validationResult.data;
+    const { email, password } = req.body;
     const [existingUser] = await db
       .select()
       .from(usersTable)
