@@ -24,9 +24,11 @@
     "tsx": "^4.21.0"
   },
   "dependencies": {
+    "@types/jsonwebtoken": "^9.0.10",
     "dotenv": "^17.3.1",
     "drizzle-orm": "^0.45.2",
     "express": "^5.2.1",
+    "jsonwebtoken": "^9.0.3",
     "pg": "^8.20.0",
     "zod": "^4.3.6"
   }

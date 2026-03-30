@@ -16,5 +16,5 @@ export const usersTable = pgTable("users", {
   password: varchar("password", { length: 66 }),
   salt: text("salt"),
   createdAt: timestamp("created_at").defaultNow().notNull(),
-  //   updatedAt: timestamp().$onUpdatenotNull(),
+  updatedAt: timestamp("updated_at").$onUpdate(() => new Date()),
 });

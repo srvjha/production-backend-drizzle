@@ -4,6 +4,7 @@ import { db } from "../../db";
 import { usersTable } from "../../db/schema";
 import { eq } from "drizzle-orm";
 import { randomBytes, createHmac } from "node:crypto";
+import { createUserToken } from "./utils/token";
 
 class AuthenticationController {
   public async handleSignUp(req: Request, res: Response) {
@@ -69,10 +70,29 @@ class AuthenticationController {
         message: "email or password is incorrect",
       });
     }
-    // TODO: Token generation
+    const token = createUserToken({ id: existingUser.id });
     return res.status(201).json({
       message: "User logged in successfully",
-      data: { id: existingUser.id, token: 1 },
+      data: { id: existingUser.id, token },
+    });
+  }
+
+  public async handleMe(req: Request, res: Response) {
+    // @ts-ignore
+    const { id } = req.user as UserTokenPayload;
+    const [user] = await db
+      .select()
+      .from(usersTable)
+      .where(eq(usersTable.id, id));
+    return res.status(200).json({
+      message: "User fetched successfully",
+      data: {
+        firstName: user?.firstName,
+        lastName: user?.lastName,
+        email: user?.email,
+        createdAt: user?.createdAt,
+        updatedAt: user?.updatedAt,
+      },
     });
   }
 }
