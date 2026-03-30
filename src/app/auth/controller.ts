@@ -23,10 +23,7 @@ class AuthenticationController {
       .from(usersTable)
       .where(eq(usersTable.email, email));
     if (existingUser.length > 0) {
-      return res.status(400).json({
-        error: "duplicate entry",
-        message: "User already exists",
-      });
+      throw ApiError.badRequest("User already exists");
     }
     const salt = randomBytes(32).toString("hex");
     const hash = createHmac("sha256", salt).update(password).digest("hex");
@@ -40,7 +37,9 @@ class AuthenticationController {
         salt,
       })
       .returning({ id: usersTable.id });
-    return res.status(201).json({
+
+    ApiResponse.created({
+      res,
       message: "User created successfully",
       data: { id: result?.id },
     });
@@ -59,21 +58,16 @@ class AuthenticationController {
       .from(usersTable)
       .where(eq(usersTable.email, email));
     if (!existingUser) {
-      return res.status(404).json({
-        error: "Not Found",
-        message: `User with this email ${email} not found`,
-      });
+      throw ApiError.notFound(`User with this email ${email} not found`);
     }
     const salt = existingUser.salt!;
     const hash = createHmac("sha256", salt).update(password).digest("hex");
     if (hash !== existingUser.password) {
-      return res.status(400).json({
-        error: "Bad Request",
-        message: "email or password is incorrect",
-      });
+      throw ApiError.badRequest("email or password is incorrect");
     }
     const token = createUserToken({ id: existingUser.id });
-    return res.status(201).json({
+    ApiResponse.created({
+      res,
       message: "User logged in successfully",
       data: { id: existingUser.id, token },
     });
