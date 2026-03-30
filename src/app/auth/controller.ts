@@ -5,6 +5,8 @@ import { usersTable } from "../../db/schema";
 import { eq } from "drizzle-orm";
 import { randomBytes, createHmac } from "node:crypto";
 import { createUserToken } from "./utils/token";
+import ApiError from "../../utils/api-error";
+import ApiResponse from "../../utils/api-response";
 
 class AuthenticationController {
   public async handleSignUp(req: Request, res: Response) {
@@ -84,14 +86,18 @@ class AuthenticationController {
       .select()
       .from(usersTable)
       .where(eq(usersTable.id, id));
-    return res.status(200).json({
+    if (!user) {
+      throw ApiError.unauthorized("Invalid or expired token");
+    }
+    ApiResponse.ok({
+      res,
       message: "User fetched successfully",
       data: {
-        firstName: user?.firstName,
-        lastName: user?.lastName,
-        email: user?.email,
-        createdAt: user?.createdAt,
-        updatedAt: user?.updatedAt,
+        firstName: user.firstName,
+        lastName: user.lastName,
+        email: user.email,
+        createdAt: user.createdAt,
+        updatedAt: user.updatedAt,
       },
     });
   }

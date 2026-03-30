@@ -8,7 +8,7 @@
     "build": "tsc -p .",
     "start": "node dist/index.js",
     "studio": "drizzle-kit studio",
-    "db:generate": "npx drizzle-kit push",
+    "db:generate": "npx drizzle-kit generate",
     "db:migrate": "npx drizzle-kit migrate"
   },
   "keywords": [],
