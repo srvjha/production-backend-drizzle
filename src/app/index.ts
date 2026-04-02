@@ -3,12 +3,14 @@ import type { Express } from "express";
 import { authRoutes } from "./auth/routes";
 import { authMiddleware } from "./middleware/auth.middleware";
 import { globalErrorHandler } from "./middleware/error.middleware";
+import cookies from 'cookie-parser';
 export function createExpressApplication(): Express {
   const app = express();
 
   // Middlewares
   app.use(express.json());
   app.use(express.urlencoded({ extended: true }));
+  app.use(cookies());
   app.use(authMiddleware());
 
   // Routes
