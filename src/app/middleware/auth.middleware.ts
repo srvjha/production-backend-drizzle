@@ -1,33 +1,25 @@
 import type { NextFunction, Request, Response } from "express";
-import { verifyUserToken } from "../auth/utils/token";
 import ApiError from "../../utils/api-error";
 import BaseDto from "../../dto/base.dto";
+import { UserPayload, verifyUserToken } from "../auth/utils";
+
+type ValidationTarget = "body" | "params" | "query";
 
 export function authMiddleware() {
   return function (req: Request, res: Response, next: NextFunction) {
-    const header = req.headers["authorization"];
-    if (!header) return next();
-    if (!header?.startsWith("Bearer ")) {
-      throw ApiError.unauthorized(
-        "authorization header should start with Bearer",
-      );
-    }
-    const token = header.split(" ")[1];
+    const token = req.cookies?.accessToken;   
     if (!token) {
-      throw ApiError.unauthorized(
-        "authorization header should start with Bearer followed by token",
-      );
+      req.user = null;
+      return next();
     }
-    const payload = verifyUserToken(token);
-    // @ts-ignore
-    req.user = payload;
+    const payload = verifyUserToken(token)
+    req.user = payload as UserPayload;
     next();
   };
 }
 
 export function restrictToAuthenticatedUser() {
   return function (req: Request, res: Response, next: NextFunction) {
-    // @ts-ignore
     if (!req.user) {
       throw ApiError.unauthorized(
         "You are not authorized to access this resource",
@@ -37,10 +29,11 @@ export function restrictToAuthenticatedUser() {
   };
 }
 
-export function validate(DtoClass: typeof BaseDto) {
+export function validate(DtoClass: typeof BaseDto, target: ValidationTarget = "body") {
   return async function (req: Request, res: Response, next: NextFunction) {
     try {
-      req.body = await DtoClass.validate(req.body);
+      const data = req[target];
+      req[target] = await DtoClass.validate(data);
       next();
     } catch (error) {
       next(error);
