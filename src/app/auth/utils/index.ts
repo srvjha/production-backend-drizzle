@@ -12,10 +12,10 @@ interface UserPayload {
   email: string;
 }
 
-const hashPassword = (password: string,salt:string) => {
-    if(salt.trim().length===0){
-  salt = randomBytes(32).toString("hex");
-    }
+const hashPassword = (password: string, salt: string) => {
+  if (salt.trim().length === 0) {
+    salt = randomBytes(32).toString("hex");
+  }
   const hashedPassword = createHmac("sha256", salt)
     .update(password)
     .digest("hex");
@@ -26,14 +26,17 @@ const hashToken = (token: string) => {
   return createHash("sha256").update(token).digest("hex");
 };
 
-const verifyUserToken = (token:string)=>{
-    try {
-         const decodeToken = JWT.verify(token,env.ACCESS_TOKEN_SECRET) as UserPayload;
-         return decodeToken;
-    } catch(error) {
-       return null
-    }
-}
+const verifyUserToken = (token: string) => {
+  try {
+    const decodeToken = JWT.verify(
+      token,
+      env.ACCESS_TOKEN_SECRET,
+    ) as UserPayload;
+    return decodeToken;
+  } catch (error) {
+    return null;
+  }
+};
 
 const verificationEmailToken = () => {
   const token = randomBytes(32).toString("hex");
@@ -42,8 +45,6 @@ const verificationEmailToken = () => {
   const tokenExpiry = new Date(oneDayPeriod);
   return { token, hashedToken, tokenExpiry };
 };
-
-
 
 const generateAccessToken = ({ id, email }: UserPayload) => {
   return JWT.sign({ id, email }, env.ACCESS_TOKEN_SECRET, {
@@ -87,5 +88,5 @@ export {
   generateRefreshToken,
   generateAccessAndRefreshToken,
   verifyUserToken,
-  type UserPayload
+  type UserPayload,
 };

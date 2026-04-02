@@ -17,7 +17,7 @@ router.post(
 );
 router.get(
   "/verify/email/:token",
-  validate(VerifyEmailDto,"params"),
+  validate(VerifyEmailDto, "params"),
   authController.verifyEmail.bind(authController),
 );
 router.post(
@@ -35,8 +35,9 @@ router.get(
 router.get(
   "/signout",
   restrictToAuthenticatedUser(),
-  authController.handleSignOut.bind(authController)
+  authController.handleSignOut.bind(authController),
+);
 
-)
+router.get("/refresh/token", authController.handleTokens.bind(authController));
 
 export { router as authRoutes };
