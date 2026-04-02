@@ -3,13 +3,14 @@ import ApiError from "../../utils/api-error";
 import BaseDto from "../../dto/base.dto";
 import { UserPayload, verifyUserToken } from "../auth/utils";
 
+type ValidationTarget = "body" | "params" | "query";
+
 export function authMiddleware() {
   return function (req: Request, res: Response, next: NextFunction) {
     const token = req.cookies?.accessToken;   
     if (!token) {
-      throw ApiError.unauthorized(
-        "authorization token is invalid or expired",
-      );
+      req.user = null;
+      return next();
     }
     const payload = verifyUserToken(token)
     req.user = payload as UserPayload;
@@ -28,16 +29,11 @@ export function restrictToAuthenticatedUser() {
   };
 }
 
-export function validate(DtoClass: typeof BaseDto) {
+export function validate(DtoClass: typeof BaseDto, target: ValidationTarget = "body") {
   return async function (req: Request, res: Response, next: NextFunction) {
     try {
-      if(req.body){
-      req.body = await DtoClass.validate(req.body);
-      } else if(req.params){
-        req.params = await DtoClass.validate(req.params);
-      }else{
-        req.query = await DtoClass.validate(req.query);
-      }
+      const data = req[target];
+      req[target] = await DtoClass.validate(data);
       next();
     } catch (error) {
       next(error);

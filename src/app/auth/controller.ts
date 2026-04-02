@@ -25,7 +25,7 @@ class AuthenticationController {
     if (existingUser.length > 0) {
       throw ApiError.badRequest("User already exists");
     }
-    const { salt, hashedPassword } = hashPassword(password,"");
+    const { salt, hashedPassword } = hashPassword(password, "");
     const { hashedToken, token, tokenExpiry } = verificationEmailToken();
     const [result] = await db
       .insert(usersTable)
@@ -63,17 +63,16 @@ class AuthenticationController {
           gt(usersTable.emailVerificationTokenExpiry, sql`now()`),
         ),
       );
-    if(!isTokenValid){
-      throw ApiError.badRequest("Verification Token Expired or invalid")
+    if (!isTokenValid) {
+      throw ApiError.badRequest("Verification Token Expired or invalid");
     }
     await db.update(usersTable).set({
-      emailVerified:true,
-      emailVerificationToken:null,
-      emailVerificationTokenExpiry:null
-    })
+      emailVerified: true,
+      emailVerificationToken: null,
+      emailVerificationTokenExpiry: null,
+    });
 
-    ApiResponse.ok({res,message:"User verified Successfully"})
-
+    ApiResponse.ok({ res, message: "User verified Successfully" });
   }
 
   public async handleSignIn(req: Request, res: Response) {
@@ -88,7 +87,7 @@ class AuthenticationController {
     if (!existingUser.emailVerified) {
       throw ApiError.badRequest("Please verify your email first");
     }
-    const { hashedPassword } = hashPassword(password,existingUser.salt!);
+    const { hashedPassword } = hashPassword(password, existingUser.salt!);
     if (hashedPassword !== existingUser.password) {
       throw ApiError.badRequest("email or password is incorrect");
     }
@@ -122,6 +121,19 @@ class AuthenticationController {
         createdAt: user.createdAt,
         updatedAt: user.updatedAt,
       },
+    });
+  }
+
+  public async handleSignOut(req: Request, res: Response) {
+    const user = req.user;
+    // delete refreshtoken from db
+    await db
+      .update(usersTable)
+      .set({ refreshToken: null })
+      .where(eq(usersTable.id, user?.id));
+    // now clear the cookie
+    ApiResponse.noContent({
+      res: res.clearCookie("accessToken").clearCookie("refreshToken"),
     });
   }
 }
