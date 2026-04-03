@@ -60,7 +60,7 @@ const emailVerificationContent = (fullName: string, verificationUrl: string) => 
 };
 
 
-const forgotPasswordContent = (username: string, passwordResetUrl: string) => {
+const forgotPasswordContent = (fullName: string, passwordResetUrl: string) => {
   return `
   <div style="background-color:#f4f7fb; padding:40px 0; font-family:Arial, sans-serif;">
     <div style="max-width:600px; margin:0 auto; background:#ffffff; border-radius:10px; overflow:hidden; box-shadow:0 4px 10px rgba(0,0,0,0.05);">
@@ -70,7 +70,7 @@ const forgotPasswordContent = (username: string, passwordResetUrl: string) => {
       </div>
 
       <div style="padding:30px; color:#333;">
-        <h2 style="margin-top:0;">Hi ${username},</h2>
+        <h2 style="margin-top:0;">Hi ${fullName},</h2>
         <p>We received a request to reset your password.</p>
 
         <div style="text-align:center; margin:30px 0;">

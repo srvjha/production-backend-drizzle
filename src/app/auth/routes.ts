@@ -5,7 +5,15 @@ import {
   restrictToAuthenticatedUser,
   validate,
 } from "../middleware/auth.middleware";
-import { SignUpDto, SignInDto, VerifyEmailDto } from "./models";
+import { 
+  SignUpDto, 
+  SignInDto, 
+  TokenDto, 
+  EmailDto,
+  ForgotPasswordDto,
+  ForgotPasswordVerifyDto,
+  ChangePasswordDto
+} from "./models";
 
 const authController = new AuthenticationController();
 const router: Router = express.Router();
@@ -17,8 +25,8 @@ router.post(
 );
 router.get(
   "/verify/email/:token",
-  validate(VerifyEmailDto),
-  authController.verifyEmail.bind(authController),
+  validate(TokenDto, "params"),
+  authController.handleVerifyEmail.bind(authController),
 );
 router.post(
   "/signin",
@@ -38,6 +46,35 @@ router.get(
   authController.handleSignOut.bind(authController),
 );
 
-router.get("/refresh/token", authController.handleTokens.bind(authController));
+router.get(
+  "/refresh/token",
+  authController.refreshAccessTokenAndRefreshToken.bind(authController),
+);
+
+router.post(
+  "/resend/email",
+  validate(EmailDto),
+  authController.resendVerificationEmail.bind(authController)
+);
+
+router.post(
+  "/forgot-password",
+  validate(ForgotPasswordDto),
+  authController.handleForgotPassword.bind(authController),
+);
+
+router.post(
+  "/forgot-password/:token",
+  validate(TokenDto, "params"),
+  validate(ForgotPasswordVerifyDto),
+  authController.handleForgotPasswordEmailVerification.bind(authController),
+);
+
+router.post(
+  "/change-password",
+  restrictToAuthenticatedUser(),
+  validate(ChangePasswordDto),
+  authController.handleCurrentPassword.bind(authController),
+);
 
 export { router as authRoutes };
