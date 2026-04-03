@@ -7,7 +7,7 @@ type ValidationTarget = "body" | "params" | "query";
 
 export function authMiddleware() {
   return function (req: Request, res: Response, next: NextFunction) {
-    const token = req.cookies?.accessToken;   
+    const token = req.cookies?.accessToken;
     if (!token) {
       req.user = null;
       return next();
