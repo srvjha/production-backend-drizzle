@@ -68,9 +68,8 @@ class AuthenticationController {
           gt(usersTable.emailVerificationTokenExpiry, sql`now()`),
         ),
       );
-    //TODO: handle message well like tell user your verification link expired
     if (!isTokenValid) {
-      throw ApiError.badRequest("Verification Token Expired or invalid");
+      throw ApiError.badRequest("Email verification link has expired. Please request a new verification link.");
     }
     await db
       .update(usersTable)
@@ -81,6 +80,7 @@ class AuthenticationController {
       })
       .where(eq(usersTable.id, isTokenValid.id));
 
+    ApiResponse.ok({ res, message: "User verified Successfully" });
   }
 
   public async handleSignIn(req: Request, res: Response) {
@@ -289,9 +289,8 @@ class AuthenticationController {
           gt(usersTable.forgotPasswordTokenExpiry, sql`now()`),
         ),
       );
-    //TODO: handle message well like tell user your verification link expired
     if (!isTokenValid) {
-      throw ApiError.badRequest("Verification Token Expired or invalid");
+      throw ApiError.badRequest("Password reset link has expired. Please request a new password reset link.");
     }
 
     const { salt, hashedPassword } = hashPassword(newPassword, "");
@@ -311,6 +310,10 @@ class AuthenticationController {
   public async handleCurrentPassword(req: Request, res: Response) {
     const { oldPassword, newPassword, confirmNewPassword } = req.body;
     const user = req.user as UserPayload;
+
+    if (!user) {
+      throw ApiError.unauthorized("Invalid or expired token");
+    }
 
     if (newPassword !== confirmNewPassword) {
       throw ApiError.badRequest(
