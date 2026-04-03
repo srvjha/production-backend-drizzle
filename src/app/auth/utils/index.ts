@@ -12,17 +12,10 @@ interface UserPayload {
   email: string;
 }
 
-<<<<<<< HEAD
-const hashPassword = (password: string,salt:string) => {
-    if(salt.trim().length===0){
-  salt = randomBytes(32).toString("hex");
-    }
-=======
 const hashPassword = (password: string, salt: string) => {
   if (salt.trim().length === 0) {
     salt = randomBytes(32).toString("hex");
   }
->>>>>>> 58fdc9a3c9c3434f59723345178218d32b335a3e
   const hashedPassword = createHmac("sha256", salt)
     .update(password)
     .digest("hex");
@@ -33,16 +26,6 @@ const hashToken = (token: string) => {
   return createHash("sha256").update(token).digest("hex");
 };
 
-<<<<<<< HEAD
-const verifyUserToken = (token:string)=>{
-    try {
-         const decodeToken = JWT.verify(token,env.ACCESS_TOKEN_SECRET) as UserPayload;
-         return decodeToken;
-    } catch(error) {
-       return null
-    }
-}
-=======
 const verifyUserToken = (token: string) => {
   try {
     const decodeToken = JWT.verify(
@@ -54,7 +37,6 @@ const verifyUserToken = (token: string) => {
     return null;
   }
 };
->>>>>>> 58fdc9a3c9c3434f59723345178218d32b335a3e
 
 const verificationEmailToken = () => {
   const token = randomBytes(32).toString("hex");
@@ -64,11 +46,6 @@ const verificationEmailToken = () => {
   return { token, hashedToken, tokenExpiry };
 };
 
-<<<<<<< HEAD
-
-
-=======
->>>>>>> 58fdc9a3c9c3434f59723345178218d32b335a3e
 const generateAccessToken = ({ id, email }: UserPayload) => {
   return JWT.sign({ id, email }, env.ACCESS_TOKEN_SECRET, {
     expiresIn: env.ACCESS_TOKEN_EXPIRY as StringValue,
@@ -111,9 +88,5 @@ export {
   generateRefreshToken,
   generateAccessAndRefreshToken,
   verifyUserToken,
-<<<<<<< HEAD
-  type UserPayload
-=======
   type UserPayload,
->>>>>>> 58fdc9a3c9c3434f59723345178218d32b335a3e
 };
