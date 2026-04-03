@@ -7,7 +7,11 @@ import express from "express";
 declare global {
   namespace Express {
     interface Request {
+<<<<<<< HEAD
       user?: Record<string,any>
+=======
+      user?: Record<string,any> | null
+>>>>>>> 58fdc9a3c9c3434f59723345178218d32b335a3e
     }
   }
 }

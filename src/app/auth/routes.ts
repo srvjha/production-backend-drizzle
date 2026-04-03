@@ -32,4 +32,12 @@ router.get(
   authController.handleMe.bind(authController),
 );
 
+router.get(
+  "/signout",
+  restrictToAuthenticatedUser(),
+  authController.handleSignOut.bind(authController),
+);
+
+router.get("/refresh/token", authController.handleTokens.bind(authController));
+
 export { router as authRoutes };

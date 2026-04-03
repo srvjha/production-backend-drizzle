@@ -14,6 +14,7 @@ import ApiError from "../../utils/api-error";
 import ApiResponse from "../../utils/api-response";
 import { env } from "../../config/env";
 import { emailVerificationContent, sendEmail } from "./utils/mail";
+import JWT from 'jsonwebtoken'
 
 class AuthenticationController {
   public async handleSignUp(req: Request, res: Response) {
@@ -123,6 +124,56 @@ class AuthenticationController {
         updatedAt: user.updatedAt,
       },
     });
+  }
+
+  public async handleSignOut(req: Request, res: Response) {
+    const { id } = req.user as UserPayload;
+    // delete refreshtoken from db
+    await db
+      .update(usersTable)
+      .set({ refreshToken: null })
+      .where(eq(usersTable.id, id));
+    // now clear the cookie
+    ApiResponse.noContent({
+      res: res.clearCookie("accessToken").clearCookie("refreshToken"),
+    });
+  }
+
+  public async handleTokens(req: Request, res: Response) {
+    const { refreshToken: incomingRefreshToken } = req.cookies;
+    if (!incomingRefreshToken) {
+      throw ApiError.unauthorized("Invalid or Expired Token");
+    }
+    let decoded: { id: string };
+    try {
+      decoded = JWT.verify(incomingRefreshToken, env.REFRESH_TOKEN_SECRET) as {
+        id: string;
+      };
+    } catch (error) {
+      throw ApiError.badRequest("Invalid or expired refresh token");
+    }
+
+    const { id } = decoded;
+    const [user] = await db
+      .select()
+      .from(usersTable)
+      .where(
+        and(
+          eq(usersTable.id, id),
+          eq(usersTable.refreshToken, incomingRefreshToken),
+        ),
+      );
+
+    if (!user) {
+      throw ApiError.unauthorized("Refresh token revoked or invalid");
+    }
+
+    const { accessToken, refreshToken } =
+      await generateAccessAndRefreshToken(id);
+    res.cookie("accessToken", accessToken);
+    res.cookie("refreshToken", refreshToken);
+
+    ApiResponse.ok({ res, message: "Tokens refreshed successfully" });
   }
 }
 
