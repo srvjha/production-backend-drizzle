@@ -16,6 +16,8 @@ export const usersTable = pgTable("users", {
   emailVerificationToken:varchar("email_verification_token",{length:4096}),
   emailVerificationTokenExpiry:timestamp("email_verification_token_expiry"),
   password: varchar("password", { length: 66 }),
+  forgotPasswordToken:varchar("forgot_password_verification_token",{length:4096}),
+  forgotPasswordTokenExpiry:timestamp("forgot_password_verification_token_expiry"),
   salt: text("salt"),
   accessToken:varchar("access_token",{length:4096}),
   refreshToken:varchar("refresh_token",{length:4096}),
