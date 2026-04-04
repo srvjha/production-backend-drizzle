@@ -3,7 +3,7 @@ import type { Express } from "express";
 import { authRoutes } from "./auth/routes";
 import { authMiddleware } from "./middleware/auth.middleware";
 import { globalErrorHandler } from "./middleware/error.middleware";
-import cookies from 'cookie-parser';
+import cookies from "cookie-parser";
 export function createExpressApplication(): Express {
   const app = express();
 
@@ -15,9 +15,11 @@ export function createExpressApplication(): Express {
 
   // Routes
   app.get("/", (req, res) => {
-    return res.json({ message: "Welcome bhai" });
+    return res.json({
+      message: "Welcome to Production Ready Authentication System",
+    });
   });
-  app.use("/auth", authRoutes);
+  app.use("/api/v1/auth", authRoutes);
   app.use(globalErrorHandler);
 
   return app;

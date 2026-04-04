@@ -20,7 +20,12 @@ import JWT from "jsonwebtoken";
 import { userSanitize } from "./utils/sanitize";
 
 class AuthenticationService {
-  async signUp(firstName: string, lastName: string, email: string, password: string) {
+  async signUp(
+    firstName: string,
+    lastName: string,
+    email: string,
+    password: string,
+  ) {
     const existingUser = await db
       .select()
       .from(usersTable)
@@ -68,7 +73,9 @@ class AuthenticationService {
       );
 
     if (!isTokenValid) {
-      throw ApiError.badRequest("Email verification link has expired. Please request a new verification link.");
+      throw ApiError.badRequest(
+        "Email verification link has expired. Please request a new verification link.",
+      );
     }
 
     await db
@@ -159,8 +166,13 @@ class AuthenticationService {
       // Refresh Token Reuse Detection
       // If a validly signed token is passed but it doesn't match the DB, it might be stolen.
       // Log the user out of all sessions immediately.
-      await db.update(usersTable).set({ refreshToken: null }).where(eq(usersTable.id, id));
-      throw ApiError.unauthorized("Refresh token revoked or invalid. Logging out for security.");
+      await db
+        .update(usersTable)
+        .set({ refreshToken: null })
+        .where(eq(usersTable.id, id));
+      throw ApiError.unauthorized(
+        "Refresh token revoked or invalid. Logging out for security.",
+      );
     }
 
     const { accessToken, refreshToken } =
@@ -239,7 +251,9 @@ class AuthenticationService {
       );
 
     if (!isTokenValid) {
-      throw ApiError.badRequest("Password reset link has expired. Please request a new password reset link.");
+      throw ApiError.badRequest(
+        "Password reset link has expired. Please request a new password reset link.",
+      );
     }
 
     const { salt, hashedPassword } = hashPassword(newPassword, "");
@@ -255,7 +269,11 @@ class AuthenticationService {
       .where(eq(usersTable.id, isTokenValid.id));
   }
 
-  async changePassword(userId: string, oldPassword: string, newPassword: string) {
+  async changePassword(
+    userId: string,
+    oldPassword: string,
+    newPassword: string,
+  ) {
     const [userInfo] = await db
       .select()
       .from(usersTable)

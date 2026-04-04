@@ -5,14 +5,14 @@ import {
   restrictToAuthenticatedUser,
   validate,
 } from "../middleware/auth.middleware";
-import { 
-  SignUpDto, 
-  SignInDto, 
-  TokenDto, 
+import {
+  SignUpDto,
+  SignInDto,
+  TokenDto,
   EmailDto,
   ForgotPasswordDto,
   ForgotPasswordVerifyDto,
-  ChangePasswordDto
+  ChangePasswordDto,
 } from "./models";
 
 const authController = new AuthenticationController();
@@ -40,21 +40,18 @@ router.get(
   authController.handleMe.bind(authController),
 );
 
-router.get(
+router.post(
   "/signout",
   restrictToAuthenticatedUser(),
   authController.handleSignOut.bind(authController),
 );
 
-router.get(
-  "/refresh/token",
-  authController.refreshAccessTokenAndRefreshToken.bind(authController),
-);
+router.post("/refresh/token", authController.refreshToken.bind(authController));
 
 router.post(
   "/resend/email",
   validate(EmailDto),
-  authController.resendVerificationEmail.bind(authController)
+  authController.resendVerificationEmail.bind(authController),
 );
 
 router.post(

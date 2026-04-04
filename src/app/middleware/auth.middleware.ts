@@ -7,12 +7,16 @@ type ValidationTarget = "body" | "params" | "query";
 
 export function authMiddleware() {
   return function (req: Request, res: Response, next: NextFunction) {
-    const token = req.cookies?.accessToken;
-    if (!token) {
-      req.user = null;
-      return next();
+    const header = req.headers["authorization"];
+    if (!header) return next();
+    if (!header?.startsWith("Bearer")) {
+      throw ApiError.unauthorized("Invalid token format");
     }
-    const payload = verifyUserToken(token)
+    const token = header.split(" ")[1];
+    if (!token) {
+      throw ApiError.unauthorized("Invalid token format");
+    }
+    const payload = verifyUserToken(token);
     req.user = payload as UserPayload;
     next();
   };
@@ -29,7 +33,10 @@ export function restrictToAuthenticatedUser() {
   };
 }
 
-export function validate(DtoClass: typeof BaseDto, target: ValidationTarget = "body") {
+export function validate(
+  DtoClass: typeof BaseDto,
+  target: ValidationTarget = "body",
+) {
   return async function (req: Request, res: Response, next: NextFunction) {
     try {
       const data = req[target];
