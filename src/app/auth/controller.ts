@@ -7,7 +7,12 @@ import authenticationService from "./services";
 class AuthenticationController {
   public async handleSignUp(req: Request, res: Response) {
     const { firstName, lastName, email, password } = req.body;
-    const result = await authenticationService.signUp(firstName, lastName, email, password);
+    const result = await authenticationService.signUp(
+      firstName,
+      lastName,
+      email,
+      password,
+    );
 
     ApiResponse.created({
       res,
@@ -25,7 +30,10 @@ class AuthenticationController {
 
   public async handleSignIn(req: Request, res: Response) {
     const { email, password } = req.body;
-    const { accessToken, refreshToken } = await authenticationService.signIn(email, password);
+    const { accessToken, refreshToken } = await authenticationService.signIn(
+      email,
+      password,
+    );
 
     const cookieOptions: CookieOptions = {
       httpOnly: true,
@@ -34,17 +42,15 @@ class AuthenticationController {
       path: "/",
     };
 
+    res.cookie("refreshToken", refreshToken, {
+      ...cookieOptions,
+      maxAge: 24 * 60 * 60 * 1000,
+    });
+
     ApiResponse.ok({
-      res: res
-        .cookie("accessToken", accessToken, {
-          ...cookieOptions,
-          maxAge: 5 * 60 * 1000,
-        })
-        .cookie("refreshToken", refreshToken, {
-          ...cookieOptions,
-          maxAge: 24 * 60 * 60 * 1000,
-        }),
+      res,
       message: "User Logged in Succesfully",
+      data: { accessToken },
     });
   }
 
@@ -71,20 +77,32 @@ class AuthenticationController {
     };
 
     ApiResponse.noContent({
-      res: res
-        .clearCookie("accessToken", cookieOptions)
-        .clearCookie("refreshToken", cookieOptions),
+      res: res.clearCookie("refreshToken", cookieOptions),
     });
   }
 
-  public async refreshAccessTokenAndRefreshToken(req: Request, res: Response) {
+  public async refreshToken(req: Request, res: Response) {
     const { refreshToken: incomingRefreshToken } = req.cookies;
-    const { accessToken, refreshToken } = await authenticationService.refreshTokens(incomingRefreshToken);
+    const { accessToken, refreshToken } =
+      await authenticationService.refreshTokens(incomingRefreshToken);
 
-    res.cookie("accessToken", accessToken);
-    res.cookie("refreshToken", refreshToken);
+    const cookieOptions: CookieOptions = {
+      httpOnly: true,
+      secure: true,
+      sameSite: "lax",
+      path: "/",
+    };
 
-    ApiResponse.ok({ res, message: "Tokens refreshed successfully" });
+    res.cookie("refreshToken", refreshToken, {
+      ...cookieOptions,
+      maxAge: 24 * 60 * 60 * 1000,
+    });
+
+    ApiResponse.ok({
+      res,
+      message: "Tokens refreshed successfully",
+      data: { accessToken },
+    });
   }
 
   public async resendVerificationEmail(req: Request, res: Response) {
@@ -107,7 +125,10 @@ class AuthenticationController {
     });
   }
 
-  public async handleForgotPasswordEmailVerification(req: Request, res: Response) {
+  public async handleForgotPasswordEmailVerification(
+    req: Request,
+    res: Response,
+  ) {
     const token = req.params.token as string;
     const { newPassword } = req.body;
     await authenticationService.resetPassword(token, newPassword);
@@ -129,7 +150,11 @@ class AuthenticationController {
       );
     }
 
-    await authenticationService.changePassword(user.id, oldPassword, newPassword);
+    await authenticationService.changePassword(
+      user.id,
+      oldPassword,
+      newPassword,
+    );
 
     ApiResponse.ok({ res, message: "Password changed successfully" });
   }

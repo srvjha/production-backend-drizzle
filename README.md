@@ -55,6 +55,7 @@ d:/production-grade/backend-drizzle/
 ### Prerequisites
 
 Ensure you have the following installed:
+
 - Node.js version 18 or higher
 - pnpm version 10.12.1 or higher
 - PostgreSQL 15+
@@ -76,6 +77,7 @@ pnpm install
 ```
 
 This command will:
+
 - Read dependencies from package.json
 - Create a lockfile (pnpm-lock.yaml) for reproducible installs
 - Install all packages in node_modules with efficient linking
@@ -114,6 +116,7 @@ RESEND_API_KEY=your-resend-api-key
 ```
 
 Key considerations:
+
 - DATABASE_URL: Ensure PostgreSQL credentials match your setup
 - ACCESS_TOKEN_SECRET and REFRESH_TOKEN_SECRET: Generate strong random strings
 - BASE_URL: Must match your frontend domain (important for email links)
@@ -173,6 +176,7 @@ The application follows a layered architecture:
 3. Database Layer: Handle data persistence
 
 This separation ensures:
+
 - Controllers are thin and focused on HTTP concerns
 - Services are reusable and testable
 - Business logic is decoupled from HTTP framework
@@ -207,40 +211,44 @@ The validate middleware automatically validates incoming requests against the DT
 
 ## Authentication Architecture
 
-### Token-Based Authentication with Cookies
+### Memory & Cookie Token-Based Authentication
 
-This application uses a dual-token approach stored in HTTP-only cookies:
+This application uses an advanced authentication architecture combining JSON response payloads and HTTP-Only cookies to maximize security for Single Page Applications (SPAs).
 
-#### Why Cookies Over LocalStorage?
+#### Why Not Store Access Tokens in Cookies or LocalStorage?
 
-1. Security: HTTP-Only cookies cannot be accessed by JavaScript, preventing XSS attacks
-2. Automatic Transmission: Cookies are sent automatically with every request, no manual header management needed
-3. CSRF Protection: With proper SameSite attributes, automatically protected against CSRF
-4. Native Browser Feature: Better support for expiration and domain restrictions
+Storing Access Tokens in `localStorage` makes them highly vulnerable to Cross-Site Scripting (XSS). Storing them in `cookies` makes your API susceptible to Cross-Site Request Forgery (CSRF).
+To defeat both vectors, this backend employs the Memory + Cookie architecture:
+
+1. **Access Token** is returned in the API JSON response. The frontend stores it purely in JavaScript memory and attaches it manually to the `Authorization` header. This prevents CSRF since browsers do not blindly attach memory headers.
+2. **Refresh Token** is stored in an `HttpOnly` cookie. This prevents XSS attacks from reading it.
 
 #### Access Token vs Refresh Token
 
 Access Token:
+
 - Short-lived (5 minutes)
-- Used for API requests authorization
-- Contains user ID in JWT payload
-- Stored in httpOnly cookie with sameSite="lax"
+- Used for API request authorization via `Authorization: Bearer <token>`
+- Contains user ID and email in JWT payload
+- Delivered via JSON response body (Requires frontend memory storage)
 
 Refresh Token:
+
 - Long-lived (24 hours)
-- Used only for obtaining new access tokens
-- Validated against database for revocation capability
-- Stored in httpOnly cookie with sameSite="lax"
+- Used exclusively for obtaining new access tokens via the `/refresh` endpoint
+- Validated against the database allowing strict token revocation
+- Stored in an `HttpOnly`, `Secure` cookie with `SameSite="lax"`
 
 ### Token Flow
 
-1. User signs in with email and password
-2. Backend validates credentials and generates both tokens
-3. Tokens stored in httpOnly, secure, sameSite cookies
-4. Frontend makes subsequent requests with cookies automatically included
-5. Auth middleware validates accessToken on protected routes
-6. When accessToken expires, frontend calls refresh endpoint
-7. Backend validates refreshToken and issues new accessToken
+1. User signs in with an email and password.
+2. Backend validates credentials and generates the JWT pair.
+3. `refreshToken` is planted as an `HttpOnly`, `Secure` cookie.
+4. `accessToken` is explicitly returned inside the HTTP JSON response payload.
+5. Frontend saves the `accessToken` into an active JS variable/state.
+6. Frontend makes API requests attaching: `Authorization: Bearer <accessToken>`.
+7. Auth middleware verifies the token directly from the header parameter.
+8. When the `accessToken` expires or frontend memory resets, the client hits the `/refresh` route. The browser auto-attaches the `refreshToken` cookie, yielding a new JSON `accessToken`.
 
 ### Why sameSite="lax" Instead of Strict?
 
@@ -265,10 +273,10 @@ All authentication cookies include:
 
 ```typescript
 const cookieOptions: CookieOptions = {
-  httpOnly: true,      // Cannot be accessed by JavaScript - prevents XSS
-  secure: true,        // Only sent over HTTPS - prevents MITM attacks
-  sameSite: "lax",     // Prevents CSRF attacks with reasonable UX
-  path: "/",           // Available across entire application
+  httpOnly: true, // Cannot be accessed by JavaScript - prevents XSS
+  secure: true, // Only sent over HTTPS - prevents MITM attacks
+  sameSite: "lax", // Prevents CSRF attacks with reasonable UX
+  path: "/", // Available across entire application
 };
 ```
 
@@ -293,9 +301,11 @@ const cookieOptions: CookieOptions = {
 ### Authentication Endpoints
 
 #### POST /api/auth/signup
+
 Register a new user with email verification.
 
 Request:
+
 ```json
 {
   "firstName": "Saurav",
@@ -306,6 +316,7 @@ Request:
 ```
 
 Response (201 Created):
+
 ```json
 {
   "success": true,
@@ -318,9 +329,11 @@ Response (201 Created):
 ```
 
 #### GET /api/auth/verify/email/:token
+
 Verify user email with token from email link.
 
 Response (200 OK):
+
 ```json
 {
   "success": true,
@@ -330,9 +343,11 @@ Response (200 OK):
 ```
 
 #### POST /api/auth/signin
+
 Authenticate user and set authentication cookies.
 
 Request:
+
 ```json
 {
   "email": "srvjha123@gmail.com",
@@ -341,20 +356,26 @@ Request:
 ```
 
 Response (200 OK):
+
 ```json
 {
   "success": true,
   "statusCode": 200,
-  "message": "User Logged in Succesfully"
+  "message": "User Logged in Succesfully",
+  "data": {
+    "accessToken": "eyJhbGciOiJIUzI1NiIsIn..."
+  }
 }
 ```
 
-Sets accessToken and refreshToken in httpOnly cookies.
+Sets `refreshToken` in an httpOnly cookie.
 
 #### GET /api/auth/me
-Get authenticated user profile. Requires valid accessToken cookie.
+
+Get authenticated user profile. Requires valid `Authorization: Bearer <token>` header.
 
 Response (200 OK):
+
 ```json
 {
   "success": true,
@@ -370,30 +391,38 @@ Response (200 OK):
 }
 ```
 
-#### GET /api/auth/signout
-Sign out user and clear authentication cookies. Requires valid accessToken cookie.
+#### POST /api/auth/signout
+
+Sign out user and clear authentication cookies. Requires valid `Authorization: Bearer <token>` header.
 
 Response (204 No Content):
-Cookies are cleared, no response body.
+The `refreshToken` cookie is cleared, no response body.
 
-#### GET /api/auth/refresh/token
-Refresh expired accessToken using refreshToken. Automatically included in request via cookies.
+#### POST /api/auth/refresh/token
+
+Refresh expired accessToken using refreshToken. Automatically relies on the `refreshToken` HTTP-Only cookie.
 
 Response (200 OK):
+
 ```json
 {
   "success": true,
   "statusCode": 200,
-  "message": "Tokens refreshed successfully"
+  "message": "Tokens refreshed successfully",
+  "data": {
+    "accessToken": "eyJhbGciOiJIUzI1NiIsIn..."
+  }
 }
 ```
 
-New tokens are set in cookies.
+A newly rotated `refreshToken` is set in cookies.
 
 #### POST /api/auth/resend/email
+
 Resend email verification link to user.
 
 Request:
+
 ```json
 {
   "email": "srvjha123@gmail.com"
@@ -401,6 +430,7 @@ Request:
 ```
 
 Response (200 OK):
+
 ```json
 {
   "success": true,
@@ -410,9 +440,11 @@ Response (200 OK):
 ```
 
 #### POST /api/auth/forgot-password
+
 Initiate password reset flow.
 
 Request:
+
 ```json
 {
   "email": "srvjha123@gmail.com"
@@ -420,6 +452,7 @@ Request:
 ```
 
 Response (200 OK):
+
 ```json
 {
   "success": true,
@@ -429,9 +462,11 @@ Response (200 OK):
 ```
 
 #### POST /api/auth/forgot-password/:token
+
 Reset password using token from email link.
 
 Request:
+
 ```json
 {
   "newPassword": "newsecurepassword123"
@@ -439,6 +474,7 @@ Request:
 ```
 
 Response (200 OK):
+
 ```json
 {
   "success": true,
@@ -448,9 +484,11 @@ Response (200 OK):
 ```
 
 #### POST /api/auth/change-password
+
 Change password for authenticated user. Requires valid accessToken cookie.
 
 Request:
+
 ```json
 {
   "oldPassword": "currentpassword123",
@@ -460,6 +498,7 @@ Request:
 ```
 
 Response (200 OK):
+
 ```json
 {
   "success": true,
@@ -479,13 +518,14 @@ Two main functions:
    - Returns 400 Bad Request if validation fails
 
 2. restrictToAuthenticatedUser(): Protects routes requiring authentication
-   - Extracts and verifies accessToken from cookies
+   - Extracts and verifies the `accessToken` from the `Authorization: Bearer` header.
    - Attaches user payload to req.user
    - Returns 401 Unauthorized if token invalid or missing
 
 ### Error Middleware (error.middleware.ts)
 
 Global error handler that:
+
 - Catches all thrown errors
 - Converts errors to standardized ApiError responses
 - Returns appropriate HTTP status codes
@@ -570,15 +610,17 @@ Services handle all database operations and business rules, making controllers s
 ## Common Issues and Solutions
 
 ### Tokens Not Being Set
+
 Ensure cookies are being sent with secure: true only in HTTPS environments. In development, set secure: false for localhost.
 
 ### Email Verification Link Not Working
+
 Check EMAIL_VERIFICATION_URL environment variable matches your frontend domain.
 
 ### Token Validation Fails
+
 Verify JWT_SECRET environment variables match between signing and verification. Check token hasn't expired.
 
 ### Database Connection Error
+
 Verify DATABASE_URL is correctly formatted and PostgreSQL is running. Check network connectivity.
-
-
