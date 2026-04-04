@@ -17,6 +17,7 @@ import {
   sendEmail,
 } from "./utils/mail";
 import JWT from "jsonwebtoken";
+import { userSanitize } from "./utils/sanitize";
 
 class AuthenticationService {
   async signUp(firstName: string, lastName: string, email: string, password: string) {
@@ -117,13 +118,8 @@ class AuthenticationService {
       throw ApiError.unauthorized("Invalid or expired token");
     }
 
-    return {
-      firstName: user.firstName,
-      lastName: user.lastName,
-      email: user.email,
-      createdAt: user.createdAt,
-      updatedAt: user.updatedAt,
-    };
+    const sanitizeOutput = userSanitize(user);
+    return sanitizeOutput;
   }
 
   async signOut(id: string) {
