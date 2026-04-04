@@ -41,7 +41,7 @@ const verifyUserToken = (token: string) => {
 const verificationEmailToken = () => {
   const token = randomBytes(32).toString("hex");
   const hashedToken = hashToken(token);
-  const oneDayPeriod = Date.now() + 60 * 60 * 1000; // 1 day
+  const oneDayPeriod = Date.now() + 60 * 60 * 1000; // 1 hour
   const tokenExpiry = new Date(oneDayPeriod);
   return { token, hashedToken, tokenExpiry };
 };
@@ -72,7 +72,10 @@ const generateAccessAndRefreshToken = async (userId: string) => {
 
   // add refreshtoken in db
   try {
-    await db.update(usersTable).set({ refreshToken });
+    await db
+      .update(usersTable)
+      .set({ refreshToken })
+      .where(eq(usersTable.id, id));
   } catch (error: any) {
     throw new ApiError(500, error.message);
   }

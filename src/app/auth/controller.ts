@@ -81,8 +81,21 @@ class AuthenticationController {
     const { refreshToken: incomingRefreshToken } = req.cookies;
     const { accessToken, refreshToken } = await authenticationService.refreshTokens(incomingRefreshToken);
 
-    res.cookie("accessToken", accessToken);
-    res.cookie("refreshToken", refreshToken);
+    const cookieOptions: CookieOptions = {
+      httpOnly: true,
+      secure: true,
+      sameSite: "lax",
+      path: "/",
+    };
+
+    res.cookie("accessToken", accessToken, {
+      ...cookieOptions,
+      maxAge: 5 * 60 * 1000,
+    });
+    res.cookie("refreshToken", refreshToken, {
+      ...cookieOptions,
+      maxAge: 24 * 60 * 60 * 1000,
+    });
 
     ApiResponse.ok({ res, message: "Tokens refreshed successfully" });
   }

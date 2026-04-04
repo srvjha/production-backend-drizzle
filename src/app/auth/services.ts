@@ -156,7 +156,11 @@ class AuthenticationService {
       );
 
     if (!user) {
-      throw ApiError.unauthorized("Refresh token revoked or invalid");
+      // Refresh Token Reuse Detection
+      // If a validly signed token is passed but it doesn't match the DB, it might be stolen.
+      // Log the user out of all sessions immediately.
+      await db.update(usersTable).set({ refreshToken: null }).where(eq(usersTable.id, id));
+      throw ApiError.unauthorized("Refresh token revoked or invalid. Logging out for security.");
     }
 
     const { accessToken, refreshToken } =
