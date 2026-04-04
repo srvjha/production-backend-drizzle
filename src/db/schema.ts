@@ -1,3 +1,4 @@
+import { InferSelectModel } from "drizzle-orm";
 import {
   pgTable,
   uuid,
@@ -24,3 +25,5 @@ export const usersTable = pgTable("users", {
   createdAt: timestamp("created_at").defaultNow().notNull(),
   updatedAt: timestamp("updated_at").$onUpdate(() => new Date()),
 });
+
+export type User = InferSelectModel<typeof usersTable>
